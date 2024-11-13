@@ -58,13 +58,13 @@ public class Main {
             statement.executeUpdate(sql);
 
             while(!quit) {
-                String command = null;
-                String commandReg = null;
                 System.out.println("Enter command, or 'q' to sign out");
+                String command = scanner.nextLine();
                 switch(command) {
                     case "q":
                         quit = true;
                     case "begin":
+                        String commandReg = scanner.nextLine();
                         switch(commandReg) {
                             case "add":
                                 System.out.print("Enter UPC:");
@@ -99,7 +99,6 @@ public class Main {
         }
         finally {
             try {
-                // Close the resources
                 if (resultSet != null) resultSet.close();
                 if (statement != null) statement.close();
                 if (connection != null) connection.close();

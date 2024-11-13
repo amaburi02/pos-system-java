@@ -1,10 +1,11 @@
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Objects;
 import java.util.Scanner;
 
 public class cashRegister {
-    private Connection connection;
+    final private Connection connection;
     public cashRegister(Connection connection) {
         this.connection = connection;
     }
@@ -18,16 +19,24 @@ public class cashRegister {
             statement.executeUpdate(sql);
         }
         else {
-            System.out.println("Would you like to add a new item to the database? (Y/N)");
+            System.out.println("Item not found. Would you like to add a new item to the database? (Y/N)");
             String dbAdd = scanner.nextLine();
-            if (dbAdd == "Y") {
-
+            if (Objects.equals(dbAdd, "Y")) {
+                System.out.println("Enter name (12 characters max):");
+                String itemName = scanner.nextLine();
+                System.out.println("Enter price: ");
+                String strPrice = scanner.nextLine();
+                double price = Double.parseDouble(strPrice);
+                sql = "INSERT INTO items (upc, item_name, price) VALUES (" + upc + ", " + itemName + ", " + price + ")";
+                statement.executeUpdate(sql);
+                sql = "INSERT INTO transaction_items (transaction_num, upc, quantity) VALUES (" + transactionNum + ", " + upc + ", " + quantity + ")";
+                statement.executeUpdate(sql);
             }
-            else if (dbAdd == "N") {
-                
+            else if (Objects.equals(dbAdd, "N")) {
+                System.out.println("Cancelled item add.");
             }
             else {
-                System.out.println("Invalid Input");
+                System.out.println("Invalid Input, please try adding the item again.");
             }
         }
     }

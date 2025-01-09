@@ -1,4 +1,5 @@
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Objects;
@@ -11,12 +12,17 @@ public class cashRegister {
     }
     Scanner scanner;
     public void addItem(long upc, int quantity, String transactionNum) throws Exception {
-        Statement statement = connection.createStatement();
-        String sql = "SELECT * FROM items WHERE upc = " + upc;
-        ResultSet rs = statement.executeQuery(sql);
+        String sql = "SELECT * FROM items WHERE upc = ?";
+        PreparedStatement checkStmt = connection.prepareStatement(sql);
+        checkStmt.setLong(1, upc);
+        ResultSet rs = checkStmt.executeQuery();
         if (rs.next()) {
-            sql = "INSERT INTO transaction_items (transaction_num, upc, quantity) VALUES (" + transactionNum + ", " + upc + ", " + quantity + ")";
-            statement.executeUpdate(sql);
+            sql = "INSERT INTO transaction_items (transaction_num, upc, quantity) VALUES (?, ?, ?)";
+            PreparedStatement addStmt = connection.prepareStatement(sql);
+            addStmt.setLong(1, Long.parseLong(transactionNum));
+            addStmt.setLong(2, upc);
+            addStmt.setInt(3, quantity);
+            addStmt.executeUpdate();
         }
         else {
             System.out.println("Item not found. Would you like to add a new item to the database? (Y/N)");
@@ -27,10 +33,18 @@ public class cashRegister {
                 System.out.println("Enter price: ");
                 String strPrice = scanner.nextLine();
                 double price = Double.parseDouble(strPrice);
-                sql = "INSERT INTO items (upc, item_name, price) VALUES (" + upc + ", " + itemName + ", " + price + ")";
-                statement.executeUpdate(sql);
-                sql = "INSERT INTO transaction_items (transaction_num, upc, quantity) VALUES (" + transactionNum + ", " + upc + ", " + quantity + ")";
-                statement.executeUpdate(sql);
+                sql = "INSERT INTO items (upc, item_name, price) VALUES (?, ?, ?)";
+                PreparedStatement itemAddStmt = connection.prepareStatement(sql);
+                itemAddStmt.setLong(1, upc);
+                itemAddStmt.setString(2, itemName);
+                itemAddStmt.setDouble(3, price);
+                itemAddStmt.executeUpdate();
+                sql = "INSERT INTO transaction_items (transaction_num, upc, quantity) VALUES (?, ?, ?)";
+                PreparedStatement TIAddStmt = connection.prepareStatement(sql);
+                TIAddStmt.setLong(1, Long.parseLong(transactionNum));
+                TIAddStmt.setLong(2, upc);
+                TIAddStmt.setInt(3, quantity);
+                TIAddStmt.executeUpdate();
             }
             else if (Objects.equals(dbAdd, "N")) {
                 System.out.println("Cancelled item add.");
@@ -41,19 +55,27 @@ public class cashRegister {
         }
     }
     public void removeItem(long upc, int quantity, String transactionNum) throws Exception {
-        Statement statement = connection.createStatement();
-        String sql = "SELECT quantity FROM transaction_items WHERE transaction_num = " + transactionNum;
-        ResultSet rs = statement.executeQuery(sql);
+        String sql = "SELECT quantity FROM transaction_items WHERE transaction_num = ?";
+        PreparedStatement checkStmt = connection.prepareStatement(sql);
+        checkStmt.setLong(1, Long.parseLong(transactionNum));
+        ResultSet rs = checkStmt.executeQuery();
         if (rs.next()) {
             int svQuantity = rs.getInt(quantity);
             if (quantity == svQuantity) {
-                sql = "DELETE FROM transaction_items WHERE (transaction_num = '" + transactionNum + "' AND upc = " + upc + ")";
+                sql = "DELETE FROM transaction_items WHERE transaction_num = ? AND upc = ?";
+                PreparedStatement delStmt = connection.prepareStatement(sql);
+                delStmt.setLong(1, Long.parseLong(transactionNum));
+                delStmt.setLong(2, upc);
+                delStmt.executeUpdate();
             }
             else if (quantity < svQuantity) {
                 svQuantity = svQuantity - quantity;
                 sql = "UPDATE transaction_items SET quantity = " + svQuantity + ", WHERE transaction_num = " + transactionNum;
+                PreparedStatement delStmt = connection.prepareStatement(sql);
+                delStmt.setInt(1, svQuantity);
+                delStmt.setLong(2, Long.parseLong(transactionNum));
+                delStmt.executeUpdate();
             }
         }
-        statement.executeUpdate(sql);
     }
 }

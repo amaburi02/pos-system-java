@@ -39,3 +39,8 @@ values (045496882266, "NSWLite Turq", 199.99);
 
 insert into operators (id, pin, name)
 values (6246, 3571, "Sherry Nguyen");
+
+set foreign_key_checks = 0;
+truncate table transactions;
+truncate table transactions_items;
+set foreign_key_checks = 1;

@@ -1,12 +1,18 @@
+import java.sql.*;
 import java.util.Random;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import javax.swing.SwingUtilities;
 import java.util.Scanner;
+import java.time.LocalDateTime;
 
 public class Main {
     public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                mainWindow main = new mainWindow();
+                main.show();
+            }
+        });
         // Database URL
         String jdbcUrl = "jdbc:mysql://localhost:3306/retail";
         String username = "root";
@@ -26,6 +32,7 @@ public class Main {
 
             Scanner scanner = new Scanner(System.in);
             String sql;
+            PreparedStatement stmt;
             String enteredId = "";
             String string_upc;
             String string_quantity;
@@ -36,9 +43,13 @@ public class Main {
                 enteredId = scanner.nextLine();
                 System.out.println("Password:");
                 String opPassword = scanner.nextLine();
-                sql = "SELECT * FROM operators WHERE id = '" + enteredId + "' AND pin = '" + opPassword + "'";
+                sql = "SELECT * FROM operators WHERE id = ? AND pin = ?";
 
-                resultSet = statement.executeQuery(sql);
+                stmt = connection.prepareStatement(sql);
+                stmt.setInt(1, Integer.parseInt(enteredId));
+                stmt.setInt(2, Integer.parseInt(opPassword));
+
+                resultSet = stmt.executeQuery();
 
                 if (resultSet.next()) {
                     System.out.println("Login successful!");
@@ -49,25 +60,26 @@ public class Main {
                 }
             }
 
-            Random rand = new Random();
-            long transactionNumFirst = rand.nextInt(99999999);
-            long transactionNumSecond = rand.nextInt(999999999);
-
-            String transactionNum = String.format("%08d%08d",transactionNumFirst, transactionNumSecond);
-            sql = "INSERT INTO transactions (transaction_num, op_num) VALUES (" + transactionNum + ", " + enteredId + ")";
-            statement.executeUpdate(sql);
-
             while(!quit) {
                 System.out.println("Enter command, or 'q' to sign out");
                 String command = scanner.nextLine();
                 switch(command) {
                     case "q":
                         quit = true;
+                        break;
                     case "begin":
+                        Random rand = new Random();
+                        long transactionNumFirst = rand.nextInt(99999999);
+                        long transactionNumSecond = rand.nextInt(999999999);
+
+                        String transactionNum = String.format("%08d%08d",transactionNumFirst, transactionNumSecond);
+                        sql = "INSERT INTO transactions (transaction_num, op_num) VALUES (" + transactionNum + ", " + enteredId + ")";
+                        statement.executeUpdate(sql);
+
                         String commandReg = scanner.nextLine();
                         switch(commandReg) {
                             case "add":
-                                System.out.print("Enter UPC:");
+                                System.out.println("Enter UPC:");
                                 string_upc = scanner.nextLine();
                                 long upc = Long.parseLong(string_upc);
 
@@ -81,18 +93,31 @@ public class Main {
                                 string_upc = scanner.nextLine();
                                 upc = Long.parseLong(string_upc);
 
-                                System.out.println("Enter quantity:");
+                                System.out.println("Enter quantity to remove:");
                                 string_quantity = scanner.nextLine();
                                 quantity = Integer.parseInt(string_quantity);
 
                                 CashRegister.removeItem(upc, quantity, transactionNum);
                             case "end":
+                                System.out.println("Enter payment method:");
+                                String paymentMethod = scanner.nextLine();
+
+                                LocalDateTime currDateTime = LocalDateTime.now();
+                                sql = "INSERT INTO transactions (transaction_num, op_num, date, payment_method) VALUES (?, ?, ?, ?)";
+                                stmt = connection.prepareStatement(sql);
+                                stmt.setInt(1, Integer.parseInt(transactionNum));
+                                stmt.setInt(2, Integer.parseInt(enteredId));
+                                stmt.setObject(3, currDateTime);
+                                stmt.setString(4, paymentMethod);
+
+                                stmt.executeUpdate();
                                 break;
                         }
                     default:
                         System.out.print("Invalid command");
                 }
             }
+            System.out.println("Signed off.");
         }
         catch (Exception e) {
             e.printStackTrace();

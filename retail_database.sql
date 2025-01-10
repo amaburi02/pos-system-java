@@ -44,3 +44,9 @@ set foreign_key_checks = 0;
 truncate table transactions;
 truncate table transactions_items;
 set foreign_key_checks = 1;
+
+select * from transaction_items;
+select * from transactions;
+select * from items;
+
+describe transaction_items;

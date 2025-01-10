@@ -68,8 +68,7 @@ public class cashRegister {
             System.out.println("SQL Query: " + quantCheck);
             ResultSet quantRs = quantCheck.executeQuery();
             if (quantRs.next()) {
-                //to do: fix logic "Column 'quantity' not found
-                int dbQuantity = rs.getInt("quantity");
+                int dbQuantity = quantRs.getInt("quantity");
                 if (quantity > dbQuantity) {
                     System.out.println("Invalid quantity entered.");
                 }

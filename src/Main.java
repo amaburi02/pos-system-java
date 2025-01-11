@@ -67,7 +67,10 @@ public class Main {
                     case "q":
                         quit = true;
                         break;
-                    case "begin":
+                    case "begin transaction":
+                        System.out.println("Transaction started");
+                        boolean transactionActive = true;
+                        //to do: add logic to avoid duplicate transaction number
                         Random rand = new Random();
                         long transactionNumFirst = rand.nextInt(99999999);
                         long transactionNumSecond = rand.nextInt(999999999);
@@ -76,45 +79,56 @@ public class Main {
                         sql = "INSERT INTO transactions (transaction_num, op_num) VALUES (" + transactionNum + ", " + enteredId + ")";
                         statement.executeUpdate(sql);
 
-                        String commandReg = scanner.nextLine();
-                        switch(commandReg) {
-                            case "add":
-                                System.out.println("Enter UPC:");
-                                string_upc = scanner.nextLine();
-                                long upc = Long.parseLong(string_upc);
+                        while(transactionActive) {
+                            System.out.println("Enter command:");
+                            String commandReg = scanner.nextLine();
+                            switch(commandReg) {
+                                case "add":
+                                    System.out.println("Enter UPC:");
+                                    string_upc = scanner.nextLine();
+                                    long upc = Long.parseLong(string_upc);
 
-                                System.out.println("Enter quantity:");
-                                string_quantity = scanner.nextLine();
-                                quantity = Integer.parseInt(string_quantity);
+                                    System.out.println("Enter quantity:");
+                                    string_quantity = scanner.nextLine();
+                                    quantity = Integer.parseInt(string_quantity);
 
-                                CashRegister.addItem(upc, quantity, transactionNum);
-                            case "void":
-                                System.out.print("Enter UPC:");
-                                string_upc = scanner.nextLine();
-                                upc = Long.parseLong(string_upc);
+                                    CashRegister.addItem(upc, quantity, transactionNum);
+                                    break;
+                                case "void":
+                                    System.out.print("Enter UPC:");
+                                    string_upc = scanner.nextLine();
+                                    upc = Long.parseLong(string_upc);
 
-                                System.out.println("Enter quantity to remove:");
-                                string_quantity = scanner.nextLine();
-                                quantity = Integer.parseInt(string_quantity);
+                                    System.out.println("Enter quantity to remove:");
+                                    string_quantity = scanner.nextLine();
+                                    quantity = Integer.parseInt(string_quantity);
 
-                                CashRegister.removeItem(upc, quantity, transactionNum);
-                            case "end":
-                                System.out.println("Enter payment method:");
-                                String paymentMethod = scanner.nextLine();
+                                    CashRegister.removeItem(upc, quantity, transactionNum);
+                                    break;
+                                case "end transaction":
+                                    System.out.println("Enter payment method:");
+                                    String paymentMethod = scanner.nextLine();
 
-                                LocalDateTime currDateTime = LocalDateTime.now();
-                                sql = "INSERT INTO transactions (transaction_num, op_num, date, payment_method) VALUES (?, ?, ?, ?)";
-                                stmt = connection.prepareStatement(sql);
-                                stmt.setInt(1, Integer.parseInt(transactionNum));
-                                stmt.setInt(2, Integer.parseInt(enteredId));
-                                stmt.setObject(3, currDateTime);
-                                stmt.setString(4, paymentMethod);
+                                    LocalDateTime currDateTime = LocalDateTime.now();
+                                    sql = "UPDATE transactions SET date = ?, payment_method = ? WHERE transaction_num = ?";
+                                    stmt = connection.prepareStatement(sql);
+                                    stmt.setObject(1, currDateTime);
+                                    stmt.setString(2, paymentMethod);
+                                    stmt.setLong(3, Long.parseLong(transactionNum));
 
-                                stmt.executeUpdate();
-                                break;
+                                    stmt.executeUpdate();
+
+                                    System.out.print("Transaction finished.");
+                                    transactionActive = false;
+                                    break;
+                                default:
+                                    System.out.println("Invalid command");
+                                    break;
+                            }
                         }
                     default:
                         System.out.print("Invalid command");
+                        break;
                 }
             }
             System.out.println("Signed off.");

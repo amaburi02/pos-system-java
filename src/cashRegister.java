@@ -1,7 +1,6 @@
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.Objects;
 import java.util.Scanner;
 
@@ -10,7 +9,7 @@ public class cashRegister {
     public cashRegister(Connection connection) {
         this.connection = connection;
     }
-    Scanner scanner;
+    Scanner scanner = new Scanner(System.in);
     public void addItem(long upc, int quantity, String transactionNum) throws Exception {
         String sql = "SELECT * FROM items WHERE upc = ?";
         PreparedStatement checkStmt = connection.prepareStatement(sql);
@@ -45,6 +44,7 @@ public class cashRegister {
                 TIAddStmt.setLong(2, upc);
                 TIAddStmt.setInt(3, quantity);
                 TIAddStmt.executeUpdate();
+                System.out.println("Item added.");
             }
             else if (Objects.equals(dbAdd, "N")) {
                 System.out.println("Cancelled item add.");
@@ -55,6 +55,38 @@ public class cashRegister {
         }
     }
     public void removeItem(long upc, int quantity, String transactionNum) throws Exception {
+        long transactionNumParse = Long.parseLong(transactionNum);
+        String sql = "SELECT * FROM items WHERE upc = ?";
+        PreparedStatement checkStmt = connection.prepareStatement(sql);
+        checkStmt.setLong(1, upc);
+        ResultSet rs = checkStmt.executeQuery();
+        if (rs.next()) {
+            sql = "SELECT quantity FROM transaction_items WHERE transaction_num = ? AND upc = ?";
+            PreparedStatement quantCheck = connection.prepareStatement(sql);
+            quantCheck.setLong(1, transactionNumParse);
+            quantCheck.setLong(2, upc);
+            System.out.println("SQL Query: " + quantCheck);
+            ResultSet quantRs = quantCheck.executeQuery();
+            if (quantRs.next()) {
+                int dbQuantity = quantRs.getInt("quantity");
+                if (quantity > dbQuantity) {
+                    System.out.println("Invalid quantity entered.");
+                }
+                else {
+                    sql = "INSERT INTO transaction_items (transaction_num, upc, quantity) VALUES (?, ?, ?)";
+                    PreparedStatement addStmt = connection.prepareStatement(sql);
+                    addStmt.setLong(1, transactionNumParse);
+                    addStmt.setLong(2, upc);
+                    addStmt.setInt(3, -quantity);
+                    addStmt.executeUpdate();
+                    System.out.println("Item voided.");
+                }
+            }
+        }
+        else {
+            System.out.println("Invalid input, please try again.");
+        }
+        /*
         String sql = "SELECT quantity FROM transaction_items WHERE transaction_num = ?";
         PreparedStatement checkStmt = connection.prepareStatement(sql);
         checkStmt.setLong(1, Long.parseLong(transactionNum));
@@ -76,6 +108,6 @@ public class cashRegister {
                 delStmt.setLong(2, Long.parseLong(transactionNum));
                 delStmt.executeUpdate();
             }
-        }
+        } */
     }
 }
